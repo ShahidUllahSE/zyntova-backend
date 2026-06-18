@@ -9,6 +9,8 @@ const userSchema = new Schema(
     contactNumber: { type: String, trim: true, default: '', maxlength: 30 },
     location: { type: String, trim: true, default: '', maxlength: 200 },
     passwordHash: { type: String, required: true, select: false },
+    passwordResetTokenHash: { type: String, select: false },
+    passwordResetExpires: { type: Date, select: false },
     role: { type: String, enum: ['admin', 'user'] satisfies UserRole[], default: 'user' },
     isActive: { type: Boolean, default: true },
   },

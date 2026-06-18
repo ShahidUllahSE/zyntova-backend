@@ -4,14 +4,22 @@ import { hashPassword, verifyPassword } from '../utils/password.js'
 import { signToken } from '../utils/jwt.js'
 import { toUserPublic } from '../utils/userMapper.js'
 import type { AuthResponse } from '../types/user.js'
+import { env } from '../config/env.js'
+import { sendPasswordResetEmail } from './email.service.js'
+import { generateResetToken, hashResetToken } from '../utils/resetToken.js'
 import type {
   RegisterInput,
   LoginInput,
   UpdateProfileInput,
   ChangePasswordInput,
+  ForgotPasswordInput,
+  ResetPasswordInput,
   ListUsersQuery,
   UpdateUserByIdInput,
 } from '../validators/user.validator.js'
+
+const PASSWORD_RESET_MESSAGE =
+  'If an account exists for that email, a password reset link has been sent.'
 
 async function buildAuthResponse(userId: string): Promise<AuthResponse> {
   const user = await User.findById(userId)
@@ -111,6 +119,71 @@ export async function changeCurrentUserPassword(userId: string, input: ChangePas
 
   user.passwordHash = await hashPassword(input.newPassword)
   await user.save()
+}
+
+export async function requestPasswordReset(input: ForgotPasswordInput): Promise<{ message: string }> {
+  const email = input.email.trim().toLowerCase()
+  const user = await User.findOne({ email, isActive: true }).select(
+    '+passwordResetTokenHash +passwordResetExpires',
+  )
+
+  if (!user) {
+    return { message: PASSWORD_RESET_MESSAGE }
+  }
+
+  const token = generateResetToken()
+  user.passwordResetTokenHash = hashResetToken(token)
+  user.passwordResetExpires = new Date(
+    Date.now() + env.PASSWORD_RESET_EXPIRES_MINUTES * 60 * 1000,
+  )
+  await user.save()
+
+  const resetUrl = `${env.CLIENT_ORIGIN}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`
+
+  try {
+    await sendPasswordResetEmail({
+      to: email,
+      firstName: user.firstName,
+      resetUrl,
+    })
+  } catch (err) {
+    user.set('passwordResetTokenHash', undefined)
+    user.set('passwordResetExpires', undefined)
+    await user.save()
+    throw err
+  }
+
+  return { message: PASSWORD_RESET_MESSAGE }
+}
+
+export async function resetPasswordWithToken(
+  input: ResetPasswordInput,
+): Promise<{ message: string }> {
+  const email = input.email.trim().toLowerCase()
+  const user = await User.findOne({ email, isActive: true }).select(
+    '+passwordResetTokenHash +passwordResetExpires +passwordHash',
+  )
+
+  if (
+    !user ||
+    !user.passwordResetTokenHash ||
+    !user.passwordResetExpires ||
+    user.passwordResetExpires.getTime() < Date.now()
+  ) {
+    throw new ApiError(400, 'Invalid or expired reset link. Please request a new one.')
+  }
+
+  const tokenHash = hashResetToken(input.token)
+  if (tokenHash !== user.passwordResetTokenHash) {
+    throw new ApiError(400, 'Invalid or expired reset link. Please request a new one.')
+  }
+
+  user.passwordHash = await hashPassword(input.newPassword)
+  user.set('passwordResetTokenHash', undefined)
+  user.set('passwordResetExpires', undefined)
+  await user.save()
+
+  return { message: 'Password reset successfully. You can now log in with your new password.' }
 }
 
 export async function getAllUsers(query: ListUsersQuery) {

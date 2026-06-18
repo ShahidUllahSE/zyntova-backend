@@ -5,6 +5,8 @@ import {
   getCurrentUser,
   updateCurrentUser,
   changeCurrentUserPassword,
+  forgotPassword,
+  resetPassword,
   getAllUsers,
   getUserById,
   updateUserById,
@@ -18,6 +20,8 @@ import {
   loginSchema,
   updateProfileSchema,
   changePasswordSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
   listUsersQuerySchema,
   updateUserByIdSchema,
 } from '../validators/user.validator.js'
@@ -27,6 +31,8 @@ const router = Router()
 // Public
 router.post('/register', validate(registerSchema), asyncHandler(register))
 router.post('/login', validate(loginSchema), asyncHandler(login))
+router.post('/forgot-password', validate(forgotPasswordSchema), asyncHandler(forgotPassword))
+router.post('/reset-password', validate(resetPasswordSchema), asyncHandler(resetPassword))
 
 // Authenticated — static paths before /:id
 router.get('/me', requireAuth, asyncHandler(getCurrentUser))

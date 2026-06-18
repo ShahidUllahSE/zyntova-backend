@@ -28,6 +28,16 @@ export const changePasswordSchema = z.object({
   newPassword: z.string().min(6).max(128),
 })
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().email().max(255),
+})
+
+export const resetPasswordSchema = z.object({
+  email: z.string().email().max(255),
+  token: z.string().min(1).max(128),
+  newPassword: z.string().min(6).max(128),
+})
+
 export const listUsersQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
@@ -50,5 +60,7 @@ export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
 export type ListUsersQuery = z.infer<typeof listUsersQuerySchema>
 export type UpdateUserByIdInput = z.infer<typeof updateUserByIdSchema>

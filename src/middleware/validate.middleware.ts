@@ -10,7 +10,12 @@ export function validate(schema: ZodSchema, part: RequestPart = 'body'): Request
       next(result.error)
       return
     }
-    req[part] = result.data
+    // Express 5: req.query is read-only — store parsed query separately.
+    if (part === 'query') {
+      req.validatedQuery = result.data
+    } else {
+      req[part] = result.data
+    }
     next()
   }
 }

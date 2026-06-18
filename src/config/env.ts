@@ -23,6 +23,17 @@ const envSchema = z.object({
   ADMIN_PASSWORD: z.string().min(6).optional(),
   ADMIN_FIRST_NAME: z.string().default('Admin'),
   ADMIN_LAST_NAME: z.string().default('User'),
+  PASSWORD_RESET_EXPIRES_MINUTES: z.coerce.number().int().positive().default(60),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_SECURE: z
+    .string()
+    .optional()
+    .transform((v) => v === 'true' || v === '1'),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().email().optional(),
+  SMTP_FROM_NAME: z.string().default('Zyntova AI'),
 })
 
 const parsed = envSchema.safeParse(process.env)

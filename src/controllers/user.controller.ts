@@ -8,6 +8,8 @@ import type {
   ChangePasswordInput,
   ListUsersQuery,
   UpdateUserByIdInput,
+  ForgotPasswordInput,
+  ResetPasswordInput,
 } from '../validators/user.validator.js'
 
 export async function register(req: Request, res: Response): Promise<void> {
@@ -35,8 +37,19 @@ export async function changeCurrentUserPassword(req: Request, res: Response): Pr
   res.json({ success: true, data: { message: 'Password updated successfully' } })
 }
 
+export async function forgotPassword(req: Request, res: Response): Promise<void> {
+  const data = await userService.requestPasswordReset(req.body as ForgotPasswordInput)
+  res.json({ success: true, data })
+}
+
+export async function resetPassword(req: Request, res: Response): Promise<void> {
+  const data = await userService.resetPasswordWithToken(req.body as ResetPasswordInput)
+  res.json({ success: true, data })
+}
+
 export async function getAllUsers(req: Request, res: Response): Promise<void> {
-  const data = await userService.getAllUsers(req.query as unknown as ListUsersQuery)
+  const query = req.validatedQuery as ListUsersQuery
+  const data = await userService.getAllUsers(query)
   res.json({ success: true, data })
 }
 
